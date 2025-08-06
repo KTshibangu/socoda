@@ -1,0 +1,113 @@
+# Performace Rights Organization Web Application
+
+## Overview
+
+This is a full-stack web application designed for a Performing Rights Organization (P.R.O). The application manages song registrations, contributor royalty tracking, business license management, and usage reporting for music venues and media outlets.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React with TypeScript
+- **Styling**: TailwindCSS with shadcn/ui component library
+- **State Management**: React Query (@tanstack/react-query) for server state
+- **Routing**: Wouter for client-side routing
+- **Form Handling**: React Hook Form with Zod validation
+- **UI Components**: Radix UI primitives through shadcn/ui
+
+### Backend Architecture
+- **Runtime**: Node.js with Express.js
+- **Language**: TypeScript
+- **API Style**: RESTful API endpoints
+- **Authentication**: JWT (JSON Web Tokens)
+- **Password Hashing**: bcryptjs
+
+## Key Components
+
+### Database Layer
+- **ORM**: Drizzle ORM
+- **Database**: PostgreSQL (configured for Neon serverless)
+- **Connection**: @neondatabase/serverless with connection pooling
+- **Migrations**: Drizzle Kit for schema management
+
+**Schema Design**:
+- Users table with role-based access (composer, author, vocalist, business, admin)
+- Works table for song registrations with ISWC/ISRC tracking
+- Contributors table linking users to works with percentage splits
+- Business licenses table for venue licensing
+- Usage reports for tracking song plays
+- Royalty distributions for payment tracking
+
+### Authentication & Authorization
+- **JWT-based authentication** with role-based access control
+- **Middleware protection** for API routes
+- **Role hierarchy**: composer/author/vocalist (content creators), business (licensees), admin (system management)
+
+### Business Logic Components
+
+#### Work Registration System
+- Users first sign up during a sign up window so that all composers, authors, and vocalists have user ids
+- Song registration with metadata (title, ISWC, ISRC) and when the main artist is registering his work they can add other composers, authors or vocalists by searching their names or user_id
+- Contributor management with predefined royalty splits (Composer: 40%, Author: 40%, Vocalist: 20%)
+- Approval workflow (pending → approved/rejected)
+
+#### Business License Management
+- License applications for different venue types (bar, restaurant, venue, radio, TV, gym, mall)
+- Dynamic fee calculation based on business type
+- currency support (USD)
+
+#### Usage Reporting
+- Play count tracking per work per license
+- Allow field in the business portal to allow business to upload their reports
+- Automated royalty calculations
+- Payment status tracking
+
+## Data Flow
+
+1. **User Registration**: Users register with specific roles (composer, author, vocalist, business, admin)
+2. **Work Registration**: Content creators register songs with contributor information
+3. **Admin Approval**: Administrators review and approve/reject work submissions
+4. **License Applications**: Businesses apply for licenses with venue-specific fees
+5. **Usage Reporting**: Licensed venues report song usage
+6. **Royalty Calculation**: System calculates royalties based on usage and contributor percentages
+7. **Payment Distribution**: Track payment status and distribution to contributors
+
+## External Dependencies
+
+### Core Dependencies
+- **@neondatabase/serverless**: PostgreSQL database connectivity
+- **drizzle-orm**: Type-safe database queries and migrations
+- **@tanstack/react-query**: Server state management
+- **@radix-ui/**: Accessible UI component primitives
+- **wouter**: Lightweight React router
+- **react-hook-form**: Form state management
+- **zod**: Runtime type validation
+
+### Development Tools
+- **Vite**: Build tool and development server
+- **TypeScript**: Type safety across frontend and backend
+- **TailwindCSS**: Utility-first CSS framework
+- **ESBuild**: Fast JavaScript bundler for production
+
+## Deployment Strategy
+
+### Build Process
+- **Frontend**: Vite builds React application to `dist/public`
+- **Backend**: ESBuild bundles server code to `dist/index.js`
+- **Database**: Drizzle migrations manage schema changes
+
+### Environment Configuration
+- Database connection via `DATABASE_URL` environment variable
+- JWT secret configuration for authentication
+- Development vs production environment handling
+
+### Scripts
+- `npm run dev`: Development server with hot reload
+- `npm run build`: Production build for both frontend and backend
+- `npm run start`: Production server
+- `npm run db:push`: Apply database schema changes
+
+The application follows a monorepo structure with shared TypeScript types and schemas between frontend and backend, ensuring type safety across the entire stack. The modular architecture allows for easy scaling and maintenance of different business domains (works, licenses, royalties).
