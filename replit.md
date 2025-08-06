@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 
 **State Management**: React Query (@tanstack/react-query) for server state management, caching, and synchronization. Local component state is managed with React's built-in useState and useContext hooks.
 
-**Routing**: Wouter for lightweight client-side routing, providing a simple alternative to React Router with a smaller bundle size.
+**Routing**: Wouter for lightweight client-side routing with role-based route protection. Artists access works/royalties, businesses access licenses/reports, admins see everything. Unauthenticated users see login/signup pages.
 
 **Form Handling**: React Hook Form with Zod validation for type-safe form validation and submission. This combination provides excellent developer experience with minimal re-renders.
 
@@ -26,7 +26,7 @@ Preferred communication style: Simple, everyday language.
 
 **API Design**: RESTful endpoints following conventional HTTP methods and status codes. The API provides endpoints for dashboard statistics, works management, business licenses, usage reports, and royalty distributions.
 
-**Authentication**: JWT (JSON Web Tokens) for stateless authentication with bcryptjs for password hashing. The system implements role-based access control with different permission levels.
+**Authentication**: Complete JWT-based authentication system with bcryptjs password hashing, login/signup pages with role selection (artist vs business), and stateless session management. Role-based access control determines navigation and API access permissions.
 
 **Data Validation**: Zod schemas shared between client and server for consistent validation across the full stack.
 
@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 
 **ORM & Database**: Drizzle ORM with PostgreSQL, specifically configured for Neon serverless database. Drizzle provides type-safe database queries and excellent TypeScript integration.
 
-**Schema Design**: The database schema includes users with role-based access (composer, author, vocalist, business, admin), works table for song registrations with ISWC/ISRC tracking, contributors table for percentage splits, business licenses for venue licensing, usage reports for tracking plays, and royalty distributions for payment tracking.
+**Schema Design**: The database schema includes users with passwords and role-based access (composer, author, vocalist, business, admin), sessions table for JWT token management, works table for song registrations with ISWC/ISRC tracking, contributors table for percentage splits, business licenses for venue licensing, usage reports for tracking plays, and royalty distributions for payment tracking.
 
 **Connection Management**: Uses @neondatabase/serverless with WebSocket support and connection pooling for optimal performance in serverless environments.
 

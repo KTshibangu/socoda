@@ -5,6 +5,7 @@ import {
   businessLicenses,
   usageReports,
   royaltyDistributions,
+  sessions,
   type User,
   type InsertUser,
   type Work,
@@ -17,6 +18,9 @@ import {
   type InsertUsageReport,
   type RoyaltyDistribution,
   type InsertRoyaltyDistribution,
+  type Session,
+  type InsertSession,
+  type SignupData,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count, sum } from "drizzle-orm";
@@ -24,8 +28,16 @@ import { eq, desc, and, count, sum } from "drizzle-orm";
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  registerUser(userData: SignupData): Promise<User>;
+  
+  // Session operations
+  createSession(session: InsertSession): Promise<Session>;
+  getSessionByToken(token: string): Promise<Session | undefined>;
+  deleteSession(token: string): Promise<void>;
+  deleteUserSessions(userId: string): Promise<void>;
   
   // Work operations
   getWorks(userId?: string): Promise<Work[]>;
@@ -71,6 +83,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserById(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
@@ -82,6 +99,42 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+
+  async registerUser(userData: SignupData): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: userData.email,
+        password: userData.password, // This will be hashed in the route handler
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role,
+      })
+      .returning();
+    return user;
+  }
+
+  // Session operations
+  async createSession(session: InsertSession): Promise<Session> {
+    const [newSession] = await db
+      .insert(sessions)
+      .values(session)
+      .returning();
+    return newSession;
+  }
+
+  async getSessionByToken(token: string): Promise<Session | undefined> {
+    const [session] = await db.select().from(sessions).where(eq(sessions.token, token));
+    return session;
+  }
+
+  async deleteSession(token: string): Promise<void> {
+    await db.delete(sessions).where(eq(sessions.token, token));
+  }
+
+  async deleteUserSessions(userId: string): Promise<void> {
+    await db.delete(sessions).where(eq(sessions.userId, userId));
   }
 
   async getWorks(userId?: string): Promise<Work[]> {

@@ -1,34 +1,70 @@
-// Basic auth utilities - to be extended when implementing full auth system
-
 export interface AuthUser {
   id: string;
   email: string;
   firstName?: string;
   lastName?: string;
-  role: "composer" | "author" | "vocalist" | "business" | "admin";
+  role: string;
   profileImageUrl?: string;
 }
 
-export function getMockUser(): AuthUser {
-  return {
-    id: "mock-user-id",
-    email: "john@example.com",
-    firstName: "John",
-    lastName: "Composer",
-    role: "admin",
-    profileImageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=32&h=32",
-  };
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
 }
 
-export function hasPermission(userRole: string, requiredRole: string): boolean {
-  const roleHierarchy = {
-    admin: 4,
-    business: 3,
-    composer: 2,
-    author: 2,
-    vocalist: 2,
-  };
+// Get token from localStorage
+export function getAuthToken(): string | null {
+  return localStorage.getItem('auth_token');
+}
 
-  return (roleHierarchy[userRole as keyof typeof roleHierarchy] || 0) >= 
-         (roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0);
+// Set token in localStorage
+export function setAuthToken(token: string): void {
+  localStorage.setItem('auth_token', token);
+}
+
+// Remove token from localStorage
+export function removeAuthToken(): void {
+  localStorage.removeItem('auth_token');
+}
+
+// Check if user has specific roles
+export function hasRole(userRole: string, allowedRoles: string[]): boolean {
+  return allowedRoles.includes(userRole);
+}
+
+// Check if user can access artist features (works, royalties)
+export function canAccessArtistFeatures(userRole: string): boolean {
+  return hasRole(userRole, ['composer', 'author', 'vocalist', 'admin']);
+}
+
+// Check if user can access business features (licenses, usage reports)
+export function canAccessBusinessFeatures(userRole: string): boolean {
+  return hasRole(userRole, ['business', 'admin']);
+}
+
+// Check if user is admin
+export function isAdmin(userRole: string): boolean {
+  return userRole === 'admin';
+}
+
+// Get user's display name
+export function getUserDisplayName(user: AuthUser): string {
+  if (user.firstName && user.lastName) {
+    return `${user.firstName} ${user.lastName}`;
+  }
+  if (user.firstName) {
+    return user.firstName;
+  }
+  return user.email;
+}
+
+// Get user initials
+export function getUserInitials(user: AuthUser): string {
+  if (user.firstName && user.lastName) {
+    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+  }
+  if (user.firstName) {
+    return user.firstName[0].toUpperCase();
+  }
+  return user.email[0].toUpperCase();
 }

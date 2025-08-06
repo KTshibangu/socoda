@@ -157,6 +157,7 @@ export default function WorkRegistrationForm() {
                       <Input
                         placeholder="T-123456789-1"
                         {...field}
+                        value={field.value || ""}
                         data-testid="input-work-iswc"
                       />
                     </FormControl>
@@ -177,6 +178,7 @@ export default function WorkRegistrationForm() {
                       <Input
                         placeholder="USRC17607839"
                         {...field}
+                        value={field.value || ""}
                         data-testid="input-work-isrc"
                       />
                     </FormControl>
@@ -195,6 +197,7 @@ export default function WorkRegistrationForm() {
                       <Input
                         placeholder="03:45"
                         {...field}
+                        value={field.value || ""}
                         data-testid="input-work-duration"
                       />
                     </FormControl>

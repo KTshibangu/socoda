@@ -1,15 +1,99 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertWorkSchema, insertContributorSchema, insertBusinessLicenseSchema, insertUsageReportSchema } from "@shared/schema";
+import { authenticateToken, optionalAuth, requireRole, hashPassword, comparePassword, generateToken, type AuthRequest } from "./auth";
+import { insertWorkSchema, insertContributorSchema, insertBusinessLicenseSchema, insertUsageReportSchema, loginSchema, signupSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Dashboard stats endpoint
-  app.get("/api/dashboard/stats", async (req, res) => {
+  // Authentication routes
+  app.post("/api/auth/signup", async (req, res) => {
     try {
-      // For now, using a mock user ID - in production this would come from auth
-      const userId = "mock-user-id";
+      const validatedData = signupSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists with this email" });
+      }
+      
+      // Hash password
+      const hashedPassword = await hashPassword(validatedData.password);
+      
+      // Create user
+      const user = await storage.registerUser({
+        ...validatedData,
+        password: hashedPassword,
+      });
+      
+      // Generate token
+      const token = generateToken(user.id);
+      
+      // Return user data without password
+      const { password, ...userWithoutPassword } = user;
+      
+      res.status(201).json({
+        token,
+        user: userWithoutPassword,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const validatedData = loginSchema.parse(req.body);
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(validatedData.email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      // Check password
+      const isValidPassword = await comparePassword(validatedData.password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      // Generate token
+      const token = generateToken(user.id);
+      
+      // Return user data without password
+      const { password, ...userWithoutPassword } = user;
+      
+      res.json({
+        token,
+        user: userWithoutPassword,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Failed to log in" });
+    }
+  });
+
+  app.post("/api/auth/logout", authenticateToken, async (req, res) => {
+    // For JWT, logout is handled client-side by removing the token
+    // In a more secure implementation, we could maintain a token blacklist
+    res.json({ message: "Logged out successfully" });
+  });
+
+  app.get("/api/auth/me", authenticateToken, async (req: AuthRequest, res) => {
+    res.json(req.user);
+  });
+
+  // Dashboard stats endpoint
+  app.get("/api/dashboard/stats", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
       const stats = await storage.getDashboardStats(userId);
       res.json(stats);
     } catch (error) {
@@ -18,10 +102,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Works endpoints
-  app.get("/api/works", async (req, res) => {
+  // Works endpoints (protected)
+  app.get("/api/works", authenticateToken, requireRole("composer", "author", "vocalist", "admin"), async (req: AuthRequest, res) => {
     try {
-      const userId = req.query.userId as string;
+      const userId = req.user!.role === "admin" ? undefined : req.user!.id;
       const works = await storage.getWorks(userId);
       res.json(works);
     } catch (error) {
@@ -30,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/works/recent", async (req, res) => {
+  app.get("/api/works/recent", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const works = await storage.getRecentWorks(limit);
@@ -58,10 +142,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     contributors: z.array(insertContributorSchema.omit({ workId: true })),
   });
 
-  app.post("/api/works", async (req, res) => {
+  app.post("/api/works", authenticateToken, requireRole("composer", "author", "vocalist"), async (req: AuthRequest, res) => {
     try {
       const validatedData = createWorkSchema.parse(req.body);
       const { contributors, ...workData } = validatedData;
+      
+      // Set the registeredBy to the authenticated user
+      workData.registeredBy = req.user!.id;
       
       // Create the work
       const work = await storage.createWork(workData);
@@ -84,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/works/:id/status", async (req, res) => {
+  app.patch("/api/works/:id/status", authenticateToken, requireRole("admin"), async (req: AuthRequest, res) => {
     try {
       const { status } = req.body;
       if (!["pending", "approved", "rejected"].includes(status)) {
@@ -135,9 +222,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Business licenses endpoints
-  app.get("/api/business-licenses", async (req, res) => {
+  app.get("/api/business-licenses", authenticateToken, requireRole("business", "admin"), async (req: AuthRequest, res) => {
     try {
-      const userId = req.query.userId as string;
+      const userId = req.user!.role === "admin" ? undefined : req.user!.id;
       const licenses = await storage.getBusinessLicenses(userId);
       res.json(licenses);
     } catch (error) {
@@ -159,9 +246,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/business-licenses", async (req, res) => {
+  app.post("/api/business-licenses", authenticateToken, requireRole("business"), async (req: AuthRequest, res) => {
     try {
       const validatedData = insertBusinessLicenseSchema.parse(req.body);
+      validatedData.appliedBy = req.user!.id;
       const license = await storage.createBusinessLicense(validatedData);
       res.status(201).json(license);
     } catch (error) {
@@ -212,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Usage reports endpoints
-  app.get("/api/usage-reports", async (req, res) => {
+  app.get("/api/usage-reports", authenticateToken, requireRole("business", "admin"), async (req: AuthRequest, res) => {
     try {
       const licenseId = req.query.licenseId as string;
       const reports = await storage.getUsageReports(licenseId);
@@ -223,9 +311,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/usage-reports", async (req, res) => {
+  app.post("/api/usage-reports", authenticateToken, requireRole("business"), async (req: AuthRequest, res) => {
     try {
       const validatedData = insertUsageReportSchema.parse(req.body);
+      validatedData.submittedBy = req.user!.id;
       const report = await storage.createUsageReport(validatedData);
       res.status(201).json(report);
     } catch (error) {
@@ -238,9 +327,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Royalties endpoints
-  app.get("/api/royalties", async (req, res) => {
+  app.get("/api/royalties", authenticateToken, requireRole("composer", "author", "vocalist", "admin"), async (req: AuthRequest, res) => {
     try {
-      const userId = req.query.userId as string;
+      const userId = req.user!.role === "admin" ? undefined : req.user!.id;
       const distributions = await storage.getRoyaltyDistributions(userId);
       res.json(distributions);
     } catch (error) {

@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { insertBusinessLicenseSchema } from "@shared/schema";
 import { z } from "zod";
+import { useEffect } from "react";
 
 const licenseFormSchema = insertBusinessLicenseSchema;
 type LicenseFormData = z.infer<typeof licenseFormSchema>;
@@ -40,13 +41,13 @@ export default function LicenseApplicationForm({ onCancel }: LicenseApplicationF
   const businessType = form.watch("businessType");
 
   // Get calculated fee when business type changes
-  const { data: feeData } = useQuery({
+  const { data: feeData } = useQuery<{ fee: number }>({
     queryKey: ["/api/business-licenses/fee", businessType],
     enabled: !!businessType,
   });
 
   // Update form when fee data changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (feeData?.fee) {
       form.setValue("annualFee", feeData.fee.toString());
     }
@@ -164,6 +165,7 @@ export default function LicenseApplicationForm({ onCancel }: LicenseApplicationF
                       <Input
                         placeholder="+1 (555) 123-4567"
                         {...field}
+                        value={field.value || ""}
                         data-testid="input-contact-phone"
                       />
                     </FormControl>

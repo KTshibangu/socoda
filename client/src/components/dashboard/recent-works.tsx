@@ -106,7 +106,7 @@ export default function RecentWorks() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500" data-testid={`text-recent-work-date-${work.id}`}>
-                      {work.createdAt ? formatDate(work.createdAt) : "-"}
+                      {work.createdAt ? formatDate(work.createdAt.toString()) : "-"}
                     </td>
                   </tr>
                 ))}

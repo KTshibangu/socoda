@@ -81,7 +81,7 @@ export default function UserManagement() {
                   >
                     <div className="flex items-center space-x-4">
                       <Avatar className="w-12 h-12">
-                        <AvatarImage src={user.profileImageUrl || undefined} />
+                        <AvatarImage src={user.profileImageUrl || ""} />
                         <AvatarFallback data-testid={`text-user-initials-${user.id}`}>
                           {getInitials(user.firstName, user.lastName)}
                         </AvatarFallback>
