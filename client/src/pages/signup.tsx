@@ -15,7 +15,7 @@ const signupSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.enum(["composer", "author", "vocalist", "business"], {
+  role: z.enum(["artist", "business"], {
     required_error: "Please select your role",
   }),
 });
@@ -79,22 +79,10 @@ export default function SignupPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="composer" data-testid="role-composer">
+                          <SelectItem value="artist" data-testid="role-artist">
                             <div className="flex items-center space-x-2">
                               <Users className="h-4 w-4" />
-                              <span>Composer</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="author" data-testid="role-author">
-                            <div className="flex items-center space-x-2">
-                              <Users className="h-4 w-4" />
-                              <span>Author</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="vocalist" data-testid="role-vocalist">
-                            <div className="flex items-center space-x-2">
-                              <Users className="h-4 w-4" />
-                              <span>Vocalist</span>
+                              <span>Artist (Composer, Author, or Vocalist)</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="business" data-testid="role-business">
@@ -124,7 +112,7 @@ export default function SignupPage() {
                         <div>
                           <p className="font-medium text-blue-900 mb-1">Artist Account</p>
                           <p className="text-blue-800">
-                            Register your works, track royalties, and manage your music rights as a {selectedRole}.
+                            Register your works, track royalties, and manage your music rights as an artist.
                           </p>
                         </div>
                       )}

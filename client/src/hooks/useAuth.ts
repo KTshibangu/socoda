@@ -14,7 +14,7 @@ export interface SignupData {
   password: string;
   firstName: string;
   lastName: string;
-  role: "composer" | "author" | "vocalist" | "business";
+  role: "artist" | "business";
 }
 
 // Hook to get current user

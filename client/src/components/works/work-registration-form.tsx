@@ -22,7 +22,7 @@ type WorkFormData = z.infer<typeof workFormSchema>;
 
 interface Contributor {
   userId: string;
-  role: "composer" | "author" | "vocalist";
+  role: "artist" | "business" | "admin";
   percentage: string;
   userName?: string;
 }
@@ -77,7 +77,7 @@ export default function WorkRegistrationForm() {
       ...contributors,
       {
         userId: "",
-        role: "composer",
+        role: "artist",
         percentage: "40",
         userName: "",
       },
@@ -108,12 +108,12 @@ export default function WorkRegistrationForm() {
 
   const getDefaultPercentage = (role: string) => {
     switch (role) {
-      case "composer":
-        return "40";
-      case "author":
-        return "40";
-      case "vocalist":
-        return "20";
+      case "artist":
+        return "50";
+      case "business":
+        return "30";
+      case "admin":
+        return "0";
       default:
         return "0";
     }
@@ -249,7 +249,7 @@ export default function WorkRegistrationForm() {
                     </div>
                     <Select
                       value={contributor.role}
-                      onValueChange={(value: "composer" | "author" | "vocalist") => {
+                      onValueChange={(value: "artist" | "business" | "admin") => {
                         updateContributor(index, "role", value);
                         updateContributor(index, "percentage", getDefaultPercentage(value));
                       }}
@@ -258,9 +258,9 @@ export default function WorkRegistrationForm() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="composer">Composer</SelectItem>
-                        <SelectItem value="author">Author</SelectItem>
-                        <SelectItem value="vocalist">Vocalist</SelectItem>
+                        <SelectItem value="artist">Artist</SelectItem>
+                        <SelectItem value="business">Business</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                     <div className="w-16 text-sm text-gray-600" data-testid={`text-contributor-percentage-${index}`}>
