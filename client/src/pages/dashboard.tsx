@@ -2,8 +2,6 @@ import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
 import StatsCards from "@/components/dashboard/stats-cards";
 import RecentWorks from "@/components/dashboard/recent-works";
-import QuickActions from "@/components/dashboard/quick-actions";
-import RecentActivity from "@/components/dashboard/recent-activity";
 import { canAccessArtistFeatures, canAccessBusinessFeatures, isAdmin } from "@/lib/auth";
 
 function ArtistDashboard() {
@@ -16,14 +14,8 @@ function ArtistDashboard() {
       />
       <div className="p-6">
         <StatsCards />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-          <div className="lg:col-span-2">
-            <RecentWorks />
-          </div>
-          <div className="space-y-6">
-            <QuickActions />
-            <RecentActivity />
-          </div>
+        <div className="mt-8">
+          <RecentWorks />
         </div>
       </div>
     </>
@@ -40,14 +32,6 @@ function BusinessDashboard() {
       />
       <div className="p-6">
         <StatsCards />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-          <div className="space-y-6">
-            <QuickActions />
-          </div>
-          <div>
-            <RecentActivity />
-          </div>
-        </div>
       </div>
     </>
   );
@@ -63,14 +47,8 @@ function AdminDashboard() {
       />
       <div className="p-6">
         <StatsCards />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-          <div className="lg:col-span-2">
-            <RecentWorks />
-          </div>
-          <div className="space-y-6">
-            <QuickActions />
-            <RecentActivity />
-          </div>
+        <div className="mt-8">
+          <RecentWorks />
         </div>
       </div>
     </>

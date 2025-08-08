@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,8 +30,10 @@ interface Contributor {
 
 export default function WorkRegistrationForm() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [contributors, setContributors] = useState<Contributor[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
 
   const form = useForm<WorkFormData>({
     resolver: zodResolver(workFormSchema),
@@ -289,11 +292,14 @@ export default function WorkRegistrationForm() {
                           updateContributor(index, "userName", e.target.value);
                           updateContributor(index, "userId", ""); // Clear user ID when typing
                           setSearchTerm(e.target.value);
+                          setActiveSearchIndex(index);
                         }}
+                        onFocus={() => setActiveSearchIndex(index)}
+                        onBlur={() => setTimeout(() => setActiveSearchIndex(null), 200)}
                         className={contributor.userId ? "border-green-500 bg-green-50" : ""}
                         data-testid={`input-contributor-search-${index}`}
                       />
-                      {searchTerm && searchResults && searchResults.length > 0 && !contributor.userId && (
+                      {searchTerm && searchResults && searchResults.length > 0 && !contributor.userId && activeSearchIndex === index && (
                         <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1">
                           {searchResults.slice(0, 5).map((user) => (
                             <button
@@ -304,6 +310,7 @@ export default function WorkRegistrationForm() {
                                 updateContributor(index, "userId", user.id);
                                 updateContributor(index, "userName", `${user.firstName} ${user.lastName} (ID: ${user.id})`);
                                 setSearchTerm("");
+                                setActiveSearchIndex(null);
                               }}
                               data-testid={`button-select-user-${user.id}`}
                             >
@@ -364,7 +371,12 @@ export default function WorkRegistrationForm() {
 
             {/* Submit */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-              <Button type="button" variant="outline" data-testid="button-cancel-work">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setLocation("/works")}
+                data-testid="button-cancel-work"
+              >
                 Cancel
               </Button>
               <Button
