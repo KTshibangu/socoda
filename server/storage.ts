@@ -23,7 +23,7 @@ import {
   type SignupData,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sum } from "drizzle-orm";
+import { eq, desc, and, count, sum, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -338,8 +338,17 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(
         and(
-          // Search by name or email, exclude business users
-          eq(users.role, "composer") || eq(users.role, "author") || eq(users.role, "vocalist")
+          // Search by name or email, include only content creators
+          or(
+            eq(users.role, "composer"),
+            eq(users.role, "author"),
+            eq(users.role, "vocalist")
+          ),
+          or(
+            ilike(users.firstName, `%${query}%`),
+            ilike(users.lastName, `%${query}%`),
+            ilike(users.email, `%${query}%`)
+          )
         )
       )
       .limit(10);

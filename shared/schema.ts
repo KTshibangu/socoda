@@ -15,7 +15,9 @@ import { z } from "zod";
 
 // Enums
 export const userRoleEnum = pgEnum("user_role", [
-  "artist", 
+  "composer",
+  "author", 
+  "vocalist",
   "business", 
   "admin"
 ]);
@@ -57,7 +59,7 @@ export const users = pgTable("users", {
   password: varchar("password").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
-  role: userRoleEnum("role").notNull().default("artist"),
+  role: userRoleEnum("role").notNull().default("composer"),
   profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
