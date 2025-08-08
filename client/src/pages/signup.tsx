@@ -15,7 +15,7 @@ const signupSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.enum(["composer", "author", "vocalist", "business"], {
+  role: z.enum(["artist", "business"], {
     required_error: "Please select your role",
   }),
   artistType: z.enum(["composer", "author", "vocalist"]).optional(),
@@ -80,22 +80,10 @@ export default function SignupPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="composer" data-testid="role-composer">
+                          <SelectItem value="artist" data-testid="role-artist">
                             <div className="flex items-center space-x-2">
                               <Users className="h-4 w-4" />
-                              <span>Composer</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="author" data-testid="role-author">
-                            <div className="flex items-center space-x-2">
-                              <Users className="h-4 w-4" />
-                              <span>Author</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="vocalist" data-testid="role-vocalist">
-                            <div className="flex items-center space-x-2">
-                              <Users className="h-4 w-4" />
-                              <span>Vocalist</span>
+                              <span>Artist (Composer, Author, or Vocalist)</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="business" data-testid="role-business">
@@ -121,30 +109,56 @@ export default function SignupPage() {
                             Access business licenses, usage reports, and manage your venue's music licensing needs.
                           </p>
                         </div>
-                      ) : selectedRole === "composer" ? (
+                      ) : selectedRole === "artist" ? (
                         <div>
-                          <p className="font-medium text-blue-900 mb-1">Composer Account</p>
+                          <p className="font-medium text-blue-900 mb-1">Artist Account</p>
                           <p className="text-blue-800">
-                            Register your compositions, track royalties, and manage your music rights as a composer.
-                          </p>
-                        </div>
-                      ) : selectedRole === "author" ? (
-                        <div>
-                          <p className="font-medium text-blue-900 mb-1">Author Account</p>
-                          <p className="text-blue-800">
-                            Register your lyrics, track royalties, and manage your music rights as a lyricist/author.
-                          </p>
-                        </div>
-                      ) : selectedRole === "vocalist" ? (
-                        <div>
-                          <p className="font-medium text-blue-900 mb-1">Vocalist Account</p>
-                          <p className="text-blue-800">
-                            Register your vocal performances, track royalties, and manage your music rights as a vocalist.
+                            Register your works, track royalties, and manage your music rights. You can be a composer, author, vocalist, or all three!
                           </p>
                         </div>
                       ) : null}
                     </div>
                   </div>
+                )}
+
+                {selectedRole === "artist" && (
+                  <FormField
+                    control={form.control}
+                    name="artistType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Primary Artist Role</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-artist-type">
+                              <SelectValue placeholder="Select your primary role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="composer" data-testid="artist-type-composer">
+                              <div className="flex items-center space-x-2">
+                                <Users className="h-4 w-4" />
+                                <span>Composer</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="author" data-testid="artist-type-author">
+                              <div className="flex items-center space-x-2">
+                                <Users className="h-4 w-4" />
+                                <span>Author/Lyricist</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="vocalist" data-testid="artist-type-vocalist">
+                              <div className="flex items-center space-x-2">
+                                <Users className="h-4 w-4" />
+                                <span>Vocalist</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
