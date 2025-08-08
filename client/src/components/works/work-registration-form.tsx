@@ -109,15 +109,18 @@ export default function WorkRegistrationForm() {
   };
 
   const onSubmit = (data: WorkFormData) => {
-    // Validate contributors
-    const invalidContributors = contributors.filter(c => !c.userId || c.userId.trim() === "");
-    if (invalidContributors.length > 0) {
-      toast({
-        title: "Error",
-        description: "Please select a valid user for all contributors",
-        variant: "destructive",
-      });
-      return;
+    // Allow works to be submitted without contributors
+    if (contributors.length > 0) {
+      // If contributors are added, they must be valid users
+      const invalidContributors = contributors.filter(c => !c.userId || c.userId.trim() === "");
+      if (invalidContributors.length > 0) {
+        toast({
+          title: "Invalid Contributors",
+          description: `Please select valid users from the search results for all contributors. Contributors must be registered users in the system.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     const formData = {
@@ -279,6 +282,9 @@ export default function WorkRegistrationForm() {
             {/* Contributors */}
             <div>
               <FormLabel className="text-base font-medium">Contributors</FormLabel>
+              <p className="text-sm text-gray-600 mb-3">
+                Add contributors who are registered users in the system. Search by name to find and select them.
+              </p>
               <div className="space-y-3 mt-2">
                 {contributors.map((contributor, index) => (
                   <div
@@ -288,7 +294,7 @@ export default function WorkRegistrationForm() {
                   >
                     <div className="flex-1 relative">
                       <Input
-                        placeholder="Search by name or User ID..."
+                        placeholder="Type to search for registered users..."
                         value={contributor.userName || ""}
                         onChange={(e) => {
                           const newValue = e.target.value;
@@ -304,7 +310,7 @@ export default function WorkRegistrationForm() {
                           setSearchTerms(prev => ({ ...prev, [index]: contributor.userName || "" }));
                         }}
                         onBlur={() => setTimeout(() => setActiveSearchIndex(null), 200)}
-                        className={contributor.userId ? "border-green-500 bg-green-50" : ""}
+                        className={contributor.userId ? "border-green-500 bg-green-50" : contributor.userName && !contributor.userId ? "border-red-500 bg-red-50" : ""}
                         data-testid={`input-contributor-search-${index}`}
                       />
                       {currentSearchTerm && searchResults && searchResults.length > 0 && !contributor.userId && activeSearchIndex === index && (
@@ -330,6 +336,16 @@ export default function WorkRegistrationForm() {
                       {contributor.userId && (
                         <div className="absolute right-2 top-2 text-green-600">
                           ✓
+                        </div>
+                      )}
+                      {contributor.userName && !contributor.userId && (
+                        <div className="absolute right-2 top-2 text-red-500">
+                          !
+                        </div>
+                      )}
+                      {currentSearchTerm && (!searchResults || searchResults.length === 0) && activeSearchIndex === index && currentSearchTerm.length > 2 && (
+                        <div className="absolute z-10 w-full bg-white border border-red-300 rounded-md shadow-lg mt-1 p-3 text-sm text-red-600">
+                          No users found. Make sure the person is registered in the system first.
                         </div>
                       )}
                     </div>
