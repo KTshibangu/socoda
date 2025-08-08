@@ -65,8 +65,8 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
       id: user.id,
       email: user.email,
       role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName: user.firstName || undefined,
+      lastName: user.lastName || undefined,
     };
 
     next();
@@ -112,8 +112,8 @@ export async function optionalAuth(req: AuthRequest, res: Response, next: NextFu
         id: user.id,
         email: user.email,
         role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
       };
     }
   } catch (error) {

@@ -94,7 +94,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/stats", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const userId = req.user!.id;
-      const stats = await storage.getDashboardStats(userId);
+      const userRole = req.user!.role;
+      const stats = await storage.getDashboardStats(userId, userRole);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);

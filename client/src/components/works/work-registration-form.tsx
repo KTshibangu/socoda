@@ -22,7 +22,7 @@ type WorkFormData = z.infer<typeof workFormSchema>;
 
 interface Contributor {
   userId: string;
-  role: "artist" | "business" | "admin";
+  role: "composer" | "author" | "vocalist" | "business" | "admin";
   percentage: string;
   userName?: string;
 }
@@ -73,25 +73,34 @@ export default function WorkRegistrationForm() {
   });
 
   const addContributor = () => {
-    setContributors([
-      ...contributors,
-      {
-        userId: "",
-        role: "artist",
-        percentage: "40",
-        userName: "",
-      },
-    ]);
+    const newContributor = {
+      userId: "",
+      role: "composer" as const,
+      percentage: "40",
+      userName: "",
+    };
+    const updatedContributors = [...contributors, newContributor];
+    const recalculated = calculatePercentages(updatedContributors);
+    setContributors(recalculated);
   };
 
   const removeContributor = (index: number) => {
-    setContributors(contributors.filter((_, i) => i !== index));
+    const updatedContributors = contributors.filter((_, i) => i !== index);
+    const recalculated = calculatePercentages(updatedContributors);
+    setContributors(recalculated);
   };
 
   const updateContributor = (index: number, field: keyof Contributor, value: string) => {
     const updated = [...contributors];
     updated[index] = { ...updated[index], [field]: value };
-    setContributors(updated);
+    
+    // Recalculate percentages if role changed
+    if (field === 'role') {
+      const recalculated = calculatePercentages(updated);
+      setContributors(recalculated);
+    } else {
+      setContributors(updated);
+    }
   };
 
   const onSubmit = (data: WorkFormData) => {
@@ -106,17 +115,65 @@ export default function WorkRegistrationForm() {
     createWorkMutation.mutate(formData);
   };
 
-  const getDefaultPercentage = (role: string) => {
+  const getDefaultPercentage = (role: "composer" | "author" | "vocalist" | "business" | "admin"): string => {
     switch (role) {
-      case "artist":
-        return "50";
+      case "composer":
+        return "40";
+      case "author":
+        return "40";
+      case "vocalist":
+        return "20";
       case "business":
-        return "30";
+        return "0";
       case "admin":
         return "0";
       default:
         return "0";
     }
+  };
+
+  // Calculate automatic percentage distribution
+  const calculatePercentages = (allContributors: Contributor[]) => {
+    const roleGroups = {
+      composers: allContributors.filter(c => c.role === "composer"),
+      authors: allContributors.filter(c => c.role === "author"),
+      vocalists: allContributors.filter(c => c.role === "vocalist"),
+    };
+
+    const updatedContributors = [...allContributors];
+
+    // Calculate equal splits within each role group
+    if (roleGroups.composers.length > 0) {
+      const percentagePerComposer = 40 / roleGroups.composers.length;
+      roleGroups.composers.forEach((composer) => {
+        const contributorIndex = allContributors.findIndex(c => c === composer);
+        if (contributorIndex !== -1) {
+          updatedContributors[contributorIndex].percentage = percentagePerComposer.toFixed(2);
+        }
+      });
+    }
+
+    if (roleGroups.authors.length > 0) {
+      const percentagePerAuthor = 40 / roleGroups.authors.length;
+      roleGroups.authors.forEach((author) => {
+        const contributorIndex = allContributors.findIndex(c => c === author);
+        if (contributorIndex !== -1) {
+          updatedContributors[contributorIndex].percentage = percentagePerAuthor.toFixed(2);
+        }
+      });
+    }
+
+    if (roleGroups.vocalists.length > 0) {
+      const percentagePerVocalist = 20 / roleGroups.vocalists.length;
+      roleGroups.vocalists.forEach((vocalist) => {
+        const contributorIndex = allContributors.findIndex(c => c === vocalist);
+        if (contributorIndex !== -1) {
+          updatedContributors[contributorIndex].percentage = percentagePerVocalist.toFixed(2);
+        }
+      });
+    }
+
+    return updatedContributors;
   };
 
   return (
@@ -249,16 +306,17 @@ export default function WorkRegistrationForm() {
                     </div>
                     <Select
                       value={contributor.role}
-                      onValueChange={(value: "artist" | "business" | "admin") => {
+                      onValueChange={(value: "composer" | "author" | "vocalist" | "business" | "admin") => {
                         updateContributor(index, "role", value);
-                        updateContributor(index, "percentage", getDefaultPercentage(value));
                       }}
                     >
                       <SelectTrigger className="w-32" data-testid={`select-contributor-role-${index}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="artist">Artist</SelectItem>
+                        <SelectItem value="composer">Composer</SelectItem>
+                        <SelectItem value="author">Author</SelectItem>
+                        <SelectItem value="vocalist">Vocalist</SelectItem>
                         <SelectItem value="business">Business</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>

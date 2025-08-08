@@ -15,9 +15,10 @@ const signupSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.enum(["artist", "business"], {
+  role: z.enum(["composer", "author", "vocalist", "business"], {
     required_error: "Please select your role",
   }),
+  artistType: z.enum(["composer", "author", "vocalist"]).optional(),
 });
 
 export default function SignupPage() {
@@ -79,10 +80,22 @@ export default function SignupPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="artist" data-testid="role-artist">
+                          <SelectItem value="composer" data-testid="role-composer">
                             <div className="flex items-center space-x-2">
                               <Users className="h-4 w-4" />
-                              <span>Artist (Composer, Author, or Vocalist)</span>
+                              <span>Composer</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="author" data-testid="role-author">
+                            <div className="flex items-center space-x-2">
+                              <Users className="h-4 w-4" />
+                              <span>Author</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="vocalist" data-testid="role-vocalist">
+                            <div className="flex items-center space-x-2">
+                              <Users className="h-4 w-4" />
+                              <span>Vocalist</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="business" data-testid="role-business">
@@ -108,14 +121,28 @@ export default function SignupPage() {
                             Access business licenses, usage reports, and manage your venue's music licensing needs.
                           </p>
                         </div>
-                      ) : (
+                      ) : selectedRole === "composer" ? (
                         <div>
-                          <p className="font-medium text-blue-900 mb-1">Artist Account</p>
+                          <p className="font-medium text-blue-900 mb-1">Composer Account</p>
                           <p className="text-blue-800">
-                            Register your works, track royalties, and manage your music rights as an artist.
+                            Register your compositions, track royalties, and manage your music rights as a composer.
                           </p>
                         </div>
-                      )}
+                      ) : selectedRole === "author" ? (
+                        <div>
+                          <p className="font-medium text-blue-900 mb-1">Author Account</p>
+                          <p className="text-blue-800">
+                            Register your lyrics, track royalties, and manage your music rights as a lyricist/author.
+                          </p>
+                        </div>
+                      ) : selectedRole === "vocalist" ? (
+                        <div>
+                          <p className="font-medium text-blue-900 mb-1">Vocalist Account</p>
+                          <p className="text-blue-800">
+                            Register your vocal performances, track royalties, and manage your music rights as a vocalist.
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 )}
@@ -210,10 +237,8 @@ export default function SignupPage() {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Already have an account?{" "}
-                <Link href="/login">
-                  <a className="font-medium text-blue-600 hover:text-blue-500" data-testid="link-login">
-                    Sign in
-                  </a>
+                <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500" data-testid="link-login">
+                  Sign in
                 </Link>
               </p>
             </div>

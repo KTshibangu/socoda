@@ -34,7 +34,7 @@ export function hasRole(userRole: string, allowedRoles: string[]): boolean {
 
 // Check if user can access artist features (works, royalties)
 export function canAccessArtistFeatures(userRole: string): boolean {
-  return hasRole(userRole, ['artist', 'admin']);
+  return hasRole(userRole, ['composer', 'author', 'vocalist', 'admin']);
 }
 
 // Check if user can access business features (licenses, usage reports)

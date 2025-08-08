@@ -66,11 +66,13 @@ export interface IStorage {
   createRoyaltyDistribution(distribution: InsertRoyaltyDistribution): Promise<RoyaltyDistribution>;
   
   // Dashboard statistics
-  getDashboardStats(userId: string): Promise<{
-    totalWorks: number;
-    totalRoyalties: string;
-    activeLicenses: number;
-    pendingApprovals: number;
+  getDashboardStats(userId: string, userRole: string): Promise<{
+    totalWorks?: number;
+    totalRoyalties?: string;
+    activeLicenses?: number;
+    pendingApprovals?: number;
+    myLicenses?: number;
+    myUsageReports?: number;
   }>;
   
   // Search users for work registration
@@ -290,46 +292,74 @@ export class DatabaseStorage implements IStorage {
     return newDistribution;
   }
 
-  async getDashboardStats(userId: string): Promise<{
-    totalWorks: number;
-    totalRoyalties: string;
-    activeLicenses: number;
-    pendingApprovals: number;
+  async getDashboardStats(userId: string, userRole: string): Promise<{
+    totalWorks?: number;
+    totalRoyalties?: string;
+    activeLicenses?: number;
+    pendingApprovals?: number;
+    myLicenses?: number;
+    myUsageReports?: number;
   }> {
-    // Get total works for user
-    const [worksCount] = await db
-      .select({ count: count() })
-      .from(works)
-      .where(eq(works.registeredBy, userId));
+    const stats: any = {};
 
-    // Get total royalties for user
-    const [royaltiesSum] = await db
-      .select({ total: sum(royaltyDistributions.amount) })
-      .from(royaltyDistributions)
-      .innerJoin(contributors, eq(royaltyDistributions.contributorId, contributors.id))
-      .where(and(
-        eq(contributors.userId, userId),
-        eq(royaltyDistributions.paymentStatus, "paid")
-      ));
+    if (userRole === "business") {
+      // Business-specific stats
+      const [myLicensesCount] = await db
+        .select({ count: count() })
+        .from(businessLicenses)
+        .where(eq(businessLicenses.appliedBy, userId));
 
-    // Get active licenses count
-    const [licensesCount] = await db
-      .select({ count: count() })
-      .from(businessLicenses)
-      .where(eq(businessLicenses.status, "active"));
+      const [myUsageReportsCount] = await db
+        .select({ count: count() })
+        .from(usageReports)
+        .where(eq(usageReports.submittedBy, userId));
 
-    // Get pending approvals count (for admin users)
-    const [approvalsCount] = await db
-      .select({ count: count() })
-      .from(works)
-      .where(eq(works.status, "pending"));
+      return {
+        myLicenses: myLicensesCount.count,
+        myUsageReports: myUsageReportsCount.count,
+      };
+    } else {
+      // Artist stats (composer, author, vocalist)
+      const [worksCount] = await db
+        .select({ count: count() })
+        .from(works)
+        .where(eq(works.registeredBy, userId));
 
-    return {
-      totalWorks: worksCount.count,
-      totalRoyalties: royaltiesSum.total ? `$${Number(royaltiesSum.total).toFixed(2)}` : "$0.00",
-      activeLicenses: licensesCount.count,
-      pendingApprovals: approvalsCount.count,
-    };
+      const [royaltiesSum] = await db
+        .select({ total: sum(royaltyDistributions.amount) })
+        .from(royaltyDistributions)
+        .innerJoin(contributors, eq(royaltyDistributions.contributorId, contributors.id))
+        .where(and(
+          eq(contributors.userId, userId),
+          eq(royaltyDistributions.paymentStatus, "paid")
+        ));
+
+      stats.totalWorks = worksCount.count;
+      stats.totalRoyalties = royaltiesSum.total ? `$${Number(royaltiesSum.total).toFixed(2)}` : "$0.00";
+    }
+
+    if (userRole === "admin") {
+      // Admin gets everything
+      const [activeLicensesCount] = await db
+        .select({ count: count() })
+        .from(businessLicenses)
+        .where(eq(businessLicenses.status, "active"));
+
+      const [approvalsCount] = await db
+        .select({ count: count() })
+        .from(works)
+        .where(eq(works.status, "pending"));
+
+      const [worksCount] = await db
+        .select({ count: count() })
+        .from(works);
+
+      stats.activeLicenses = activeLicensesCount.count;
+      stats.pendingApprovals = approvalsCount.count;
+      stats.totalWorks = worksCount.count;
+    }
+
+    return stats;
   }
 
   async searchUsers(query: string): Promise<User[]> {
