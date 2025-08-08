@@ -32,7 +32,7 @@ export default function WorkRegistrationForm() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [contributors, setContributors] = useState<Contributor[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerms, setSearchTerms] = useState<{ [key: number]: string }>({});
   const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
 
   const form = useForm<WorkFormData>({
@@ -48,9 +48,11 @@ export default function WorkRegistrationForm() {
     },
   });
 
+  const currentSearchTerm = activeSearchIndex !== null ? (searchTerms[activeSearchIndex] || "") : "";
+  
   const { data: searchResults } = useQuery<User[]>({
-    queryKey: ["/api/users/search", { q: searchTerm }],
-    enabled: searchTerm.length > 2,
+    queryKey: ["/api/users/search", { q: currentSearchTerm }],
+    enabled: currentSearchTerm.length > 2,
   });
 
   const createWorkMutation = useMutation({
@@ -289,17 +291,23 @@ export default function WorkRegistrationForm() {
                         placeholder="Search by name or User ID..."
                         value={contributor.userName || ""}
                         onChange={(e) => {
-                          updateContributor(index, "userName", e.target.value);
-                          updateContributor(index, "userId", ""); // Clear user ID when typing
-                          setSearchTerm(e.target.value);
+                          const newValue = e.target.value;
+                          updateContributor(index, "userName", newValue);
+                          if (contributor.userId) {
+                            updateContributor(index, "userId", ""); // Clear user ID when typing
+                          }
+                          setSearchTerms(prev => ({ ...prev, [index]: newValue }));
                           setActiveSearchIndex(index);
                         }}
-                        onFocus={() => setActiveSearchIndex(index)}
+                        onFocus={() => {
+                          setActiveSearchIndex(index);
+                          setSearchTerms(prev => ({ ...prev, [index]: contributor.userName || "" }));
+                        }}
                         onBlur={() => setTimeout(() => setActiveSearchIndex(null), 200)}
                         className={contributor.userId ? "border-green-500 bg-green-50" : ""}
                         data-testid={`input-contributor-search-${index}`}
                       />
-                      {searchTerm && searchResults && searchResults.length > 0 && !contributor.userId && activeSearchIndex === index && (
+                      {currentSearchTerm && searchResults && searchResults.length > 0 && !contributor.userId && activeSearchIndex === index && (
                         <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1">
                           {searchResults.slice(0, 5).map((user) => (
                             <button
@@ -309,7 +317,7 @@ export default function WorkRegistrationForm() {
                               onClick={() => {
                                 updateContributor(index, "userId", user.id);
                                 updateContributor(index, "userName", `${user.firstName} ${user.lastName} (ID: ${user.id})`);
-                                setSearchTerm("");
+                                setSearchTerms(prev => ({ ...prev, [index]: "" }));
                                 setActiveSearchIndex(null);
                               }}
                               data-testid={`button-select-user-${user.id}`}
