@@ -22,7 +22,7 @@ function AuthenticatedRouter() {
   const { user } = useAuth();
   
   if (!user) {
-    return <NotFound />;
+    return <PublicRouter />;
   }
 
   const userRole = user.role;
