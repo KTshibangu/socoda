@@ -42,10 +42,12 @@ export default function RecentWorks() {
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Recent Works</h3>
-          <Link href="/works">
-            <a className="text-primary-600 hover:text-primary-700 text-sm font-medium" data-testid="link-view-all-works">
-              View all
-            </a>
+          <Link 
+            href="/works"
+            className="text-primary-600 hover:text-primary-700 text-sm font-medium" 
+            data-testid="link-view-all-works"
+          >
+            View all
           </Link>
         </div>
       </div>

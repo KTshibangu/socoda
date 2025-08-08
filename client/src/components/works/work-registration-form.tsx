@@ -22,7 +22,7 @@ type WorkFormData = z.infer<typeof workFormSchema>;
 
 interface Contributor {
   userId: string;
-  role: "composer" | "author" | "vocalist" | "business" | "admin";
+  role: "composer" | "author" | "vocalist";
   percentage: string;
   userName?: string;
 }
@@ -104,6 +104,17 @@ export default function WorkRegistrationForm() {
   };
 
   const onSubmit = (data: WorkFormData) => {
+    // Validate contributors
+    const invalidContributors = contributors.filter(c => !c.userId || c.userId.trim() === "");
+    if (invalidContributors.length > 0) {
+      toast({
+        title: "Error",
+        description: "Please select a valid user for all contributors",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = {
       ...data,
       contributors: contributors.map(c => ({
@@ -115,7 +126,7 @@ export default function WorkRegistrationForm() {
     createWorkMutation.mutate(formData);
   };
 
-  const getDefaultPercentage = (role: "composer" | "author" | "vocalist" | "business" | "admin"): string => {
+  const getDefaultPercentage = (role: "composer" | "author" | "vocalist"): string => {
     switch (role) {
       case "composer":
         return "40";
@@ -123,10 +134,6 @@ export default function WorkRegistrationForm() {
         return "40";
       case "vocalist":
         return "20";
-      case "business":
-        return "0";
-      case "admin":
-        return "0";
       default:
         return "0";
     }
@@ -274,17 +281,19 @@ export default function WorkRegistrationForm() {
                     className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg"
                     data-testid={`contributor-row-${index}`}
                   >
-                    <div className="flex-1">
+                    <div className="flex-1 relative">
                       <Input
                         placeholder="Search by name or User ID..."
                         value={contributor.userName || ""}
                         onChange={(e) => {
                           updateContributor(index, "userName", e.target.value);
+                          updateContributor(index, "userId", ""); // Clear user ID when typing
                           setSearchTerm(e.target.value);
                         }}
+                        className={contributor.userId ? "border-green-500 bg-green-50" : ""}
                         data-testid={`input-contributor-search-${index}`}
                       />
-                      {searchResults && searchResults.length > 0 && (
+                      {searchTerm && searchResults && searchResults.length > 0 && !contributor.userId && (
                         <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1">
                           {searchResults.slice(0, 5).map((user) => (
                             <button
@@ -303,10 +312,15 @@ export default function WorkRegistrationForm() {
                           ))}
                         </div>
                       )}
+                      {contributor.userId && (
+                        <div className="absolute right-2 top-2 text-green-600">
+                          ✓
+                        </div>
+                      )}
                     </div>
                     <Select
                       value={contributor.role}
-                      onValueChange={(value: "composer" | "author" | "vocalist" | "business" | "admin") => {
+                      onValueChange={(value: "composer" | "author" | "vocalist") => {
                         updateContributor(index, "role", value);
                       }}
                     >
@@ -317,8 +331,6 @@ export default function WorkRegistrationForm() {
                         <SelectItem value="composer">Composer</SelectItem>
                         <SelectItem value="author">Author</SelectItem>
                         <SelectItem value="vocalist">Vocalist</SelectItem>
-                        <SelectItem value="business">Business</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                     <div className="w-16 text-sm text-gray-600" data-testid={`text-contributor-percentage-${index}`}>
