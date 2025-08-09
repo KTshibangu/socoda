@@ -18,7 +18,6 @@ const signupSchema = z.object({
   role: z.enum(["artist", "business"], {
     required_error: "Please select your role",
   }),
-  artistType: z.enum(["composer", "author", "vocalist"]).optional(),
 });
 
 export default function SignupPage() {
@@ -121,45 +120,7 @@ export default function SignupPage() {
                   </div>
                 )}
 
-                {selectedRole === "artist" && (
-                  <FormField
-                    control={form.control}
-                    name="artistType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Artist Role</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-artist-type">
-                              <SelectValue placeholder="Select your primary role" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="composer" data-testid="artist-type-composer">
-                              <div className="flex items-center space-x-2">
-                                <Users className="h-4 w-4" />
-                                <span>Composer</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="author" data-testid="artist-type-author">
-                              <div className="flex items-center space-x-2">
-                                <Users className="h-4 w-4" />
-                                <span>Author/Lyricist</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="vocalist" data-testid="artist-type-vocalist">
-                              <div className="flex items-center space-x-2">
-                                <Users className="h-4 w-4" />
-                                <span>Vocalist</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField

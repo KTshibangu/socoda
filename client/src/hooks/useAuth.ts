@@ -15,7 +15,6 @@ export interface SignupData {
   firstName: string;
   lastName: string;
   role: "artist" | "business";
-  artistType?: "composer" | "author" | "vocalist";
 }
 
 // Hook to get current user
@@ -75,12 +74,7 @@ export function useSignup() {
 
   return useMutation({
     mutationFn: async (signupData: SignupData) => {
-      // Transform the data before sending to the backend
-      const backendData = {
-        ...signupData,
-        role: signupData.role === "artist" && signupData.artistType ? signupData.artistType : signupData.role
-      };
-      const response = await apiRequest("POST", "/api/auth/signup", backendData);
+      const response = await apiRequest("POST", "/api/auth/signup", signupData);
       return response.json() as Promise<AuthResponse>;
     },
     onSuccess: (data: AuthResponse) => {

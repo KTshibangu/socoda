@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Trash2, Plus } from "lucide-react";
 import { insertWorkSchema, insertContributorSchema, type User } from "@shared/schema";
 import { z } from "zod";
@@ -30,6 +31,7 @@ interface Contributor {
 
 export default function WorkRegistrationForm() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [contributors, setContributors] = useState<Contributor[]>([]);
   const [searchTerms, setSearchTerms] = useState<{ [key: number]: string }>({});
@@ -43,7 +45,7 @@ export default function WorkRegistrationForm() {
       isrc: "",
       duration: "",
       status: "pending",
-      registeredBy: "mock-user-id", // In production, this would come from auth
+      registeredBy: user?.id || "",
       contributors: [],
     },
   });
@@ -132,6 +134,7 @@ export default function WorkRegistrationForm() {
 
     const formData = {
       ...data,
+      registeredBy: user?.id || "",
       contributors: contributors.map(c => ({
         userId: c.userId,
         role: c.role,

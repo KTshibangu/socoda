@@ -95,11 +95,7 @@ function Router() {
     );
   }
 
-  if (isAuthenticated) {
-    return <AuthenticatedRouter />;
-  }
-
-  return <PublicRouter />;
+  return isAuthenticated ? <AuthenticatedRouter /> : <PublicRouter />;
 }
 
 function App() {

@@ -104,6 +104,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async registerUser(userData: SignupData): Promise<User> {
+    // Map frontend role to backend role
+    const dbRole = userData.role === "artist" ? "composer" : userData.role;
+    
     const [user] = await db
       .insert(users)
       .values({
@@ -111,7 +114,7 @@ export class DatabaseStorage implements IStorage {
         password: userData.password, // This will be hashed in the route handler
         firstName: userData.firstName,
         lastName: userData.lastName,
-        role: userData.role,
+        role: dbRole as "composer" | "author" | "vocalist" | "business" | "admin",
       })
       .returning();
     return user;
