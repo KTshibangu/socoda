@@ -74,9 +74,8 @@ function PublicRouter() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
-      <Route>
-        {() => <Login />}
-      </Route>
+      <Route path="/" component={Login} />
+      <Route component={Login} />
     </Switch>
   );
 }

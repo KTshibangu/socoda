@@ -104,9 +104,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async registerUser(userData: SignupData): Promise<User> {
-    // Map frontend role to backend role
-    const dbRole = userData.role === "artist" ? "composer" : userData.role;
-    
     const [user] = await db
       .insert(users)
       .values({
@@ -114,7 +111,7 @@ export class DatabaseStorage implements IStorage {
         password: userData.password, // This will be hashed in the route handler
         firstName: userData.firstName,
         lastName: userData.lastName,
-        role: dbRole as "composer" | "author" | "vocalist" | "business" | "admin",
+        role: userData.role as "artist" | "business" | "admin",
       })
       .returning();
     return user;
@@ -371,11 +368,12 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(
         and(
-          // Search by name or email, include only content creators
+          // Search by name or email, include content creators (both old and new role formats)
           or(
-            eq(users.role, "composer"),
-            eq(users.role, "author"),
-            eq(users.role, "vocalist")
+            eq(users.role, "artist"),
+            eq(users.role, sql`'composer'::user_role`),
+            eq(users.role, sql`'author'::user_role`), 
+            eq(users.role, sql`'vocalist'::user_role`)
           ),
           or(
             ilike(users.firstName, `%${query}%`),

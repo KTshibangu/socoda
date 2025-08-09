@@ -15,11 +15,15 @@ import { z } from "zod";
 
 // Enums
 export const userRoleEnum = pgEnum("user_role", [
-  "composer",
-  "author", 
-  "vocalist",
+  "artist",
   "business", 
   "admin"
+]);
+
+export const contributorRoleEnum = pgEnum("contributor_role", [
+  "composer",
+  "author", 
+  "vocalist"
 ]);
 
 export const workStatusEnum = pgEnum("work_status", [
@@ -59,7 +63,7 @@ export const users = pgTable("users", {
   password: varchar("password").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
-  role: userRoleEnum("role").notNull().default("composer"),
+  role: userRoleEnum("role").notNull().default("artist"),
   profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -92,7 +96,7 @@ export const contributors = pgTable("contributors", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   workId: varchar("work_id").notNull().references(() => works.id),
   userId: varchar("user_id").notNull().references(() => users.id),
-  role: userRoleEnum("role").notNull(),
+  role: contributorRoleEnum("role").notNull(),
   percentage: decimal("percentage", { precision: 5, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
