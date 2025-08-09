@@ -51,8 +51,15 @@ export default function WorkRegistrationForm() {
   const currentSearchTerm = activeSearchIndex !== null ? (searchTerms[activeSearchIndex] || "") : "";
   
   const { data: searchResults } = useQuery<User[]>({
-    queryKey: ["/api/users/search", { q: currentSearchTerm }],
+    queryKey: ["/api/users/search", currentSearchTerm],
     enabled: currentSearchTerm.length > 2,
+    queryFn: async () => {
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(currentSearchTerm)}`);
+      if (!response.ok) {
+        throw new Error('Failed to search users');
+      }
+      return response.json();
+    },
   });
 
   const createWorkMutation = useMutation({
