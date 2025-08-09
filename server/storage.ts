@@ -23,7 +23,7 @@ import {
   type SignupData,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sum, or, ilike } from "drizzle-orm";
+import { eq, desc, and, count, sum, or, ilike, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -363,23 +363,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchUsers(query: string): Promise<User[]> {
+    // Search all users by name/email - we'll filter on the frontend if needed
     return await db
       .select()
       .from(users)
       .where(
-        and(
-          // Search by name or email, include content creators (both old and new role formats)
-          or(
-            eq(users.role, "artist"),
-            eq(users.role, sql`'composer'::user_role`),
-            eq(users.role, sql`'author'::user_role`), 
-            eq(users.role, sql`'vocalist'::user_role`)
-          ),
-          or(
-            ilike(users.firstName, `%${query}%`),
-            ilike(users.lastName, `%${query}%`),
-            ilike(users.email, `%${query}%`)
-          )
+        or(
+          ilike(users.firstName, `%${query}%`),
+          ilike(users.lastName, `%${query}%`),
+          ilike(users.email, `%${query}%`)
         )
       )
       .limit(10);
