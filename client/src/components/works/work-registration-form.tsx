@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Trash2, Plus } from "lucide-react";
+import { getAuthToken, canAccessArtistFeatures } from "@/lib/auth";
 import { insertWorkSchema, insertContributorSchema, type User } from "@shared/schema";
 import { z } from "zod";
 
@@ -28,6 +29,8 @@ interface Contributor {
   percentage: string;
   userName?: string;
 }
+
+
 
 export default function WorkRegistrationForm() {
   const { toast } = useToast();
@@ -51,7 +54,7 @@ export default function WorkRegistrationForm() {
   });
 
   const currentSearchTerm = activeSearchIndex !== null ? (searchTerms[activeSearchIndex] || "") : "";
-  
+
   const { data: searchResults } = useQuery<User[]>({
     queryKey: ["/api/users/search", currentSearchTerm],
     enabled: currentSearchTerm.length > 2,
@@ -65,26 +68,40 @@ export default function WorkRegistrationForm() {
   });
 
   const createWorkMutation = useMutation({
-    mutationFn: async (data: WorkFormData) => {
-      await apiRequest("POST", "/api/works", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/works"] });
-      toast({
-        title: "Success",
-        description: "Work registered successfully",
-      });
-      form.reset();
-      setContributors([]);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  mutationFn: async (data: WorkFormData) => {
+    console.log("About to send POST request with data:", data); // ADD THIS
+    
+    try {
+      const response = await apiRequest("POST", "/api/works", data);
+      console.log("POST request successful, response:", response); // ADD THIS
+      return await response.json();
+    } catch (error) {
+      console.error("POST /api/works error:", error); // ADD THIS - shows exact error message
+      console.error("Full error object:", error); // ADD THIS - shows complete error
+      throw error;
+    }
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/works"] });
+    toast({
+      title: "Success",
+      description: "Work registered successfully",
+    });
+    form.reset();
+    setContributors([]);
+    setSearchTerms({});
+    setActiveSearchIndex(null);
+  },
+  onError: (error) => {
+    console.error("Mutation onError - Full error:", error); // ADD THIS
+    console.error("Mutation onError - Error message:", error.message); // ADD THIS
+    toast({
+      title: "Error",
+      description: error.message, // This will now show the actual server error
+      variant: "destructive",
+    });
+  },
+});
 
   const addContributor = () => {
     const newContributor = {
@@ -102,12 +119,32 @@ export default function WorkRegistrationForm() {
     const updatedContributors = contributors.filter((_, i) => i !== index);
     const recalculated = calculatePercentages(updatedContributors);
     setContributors(recalculated);
+
+    // ADDED ALL THIS CLEANUP LOGIC:
+    // Clean up search terms for removed contributor
+    const newSearchTerms = { ...searchTerms };
+    delete newSearchTerms[index];
+    // Shift down search terms for contributors after the removed one
+    Object.keys(newSearchTerms).forEach(key => {
+      const keyNum = parseInt(key);
+      if (keyNum > index) {
+        newSearchTerms[keyNum - 1] = newSearchTerms[keyNum];
+        delete newSearchTerms[keyNum];
+      }
+    });
+    setSearchTerms(newSearchTerms);
+
+    if (activeSearchIndex === index) {
+      setActiveSearchIndex(null);
+    } else if (activeSearchIndex !== null && activeSearchIndex > index) {
+      setActiveSearchIndex(activeSearchIndex - 1);
+    }
   };
 
   const updateContributor = (index: number, field: keyof Contributor, value: string) => {
     const updated = [...contributors];
     updated[index] = { ...updated[index], [field]: value };
-    
+
     // Recalculate percentages if role changed
     if (field === 'role') {
       const recalculated = calculatePercentages(updated);
@@ -117,7 +154,47 @@ export default function WorkRegistrationForm() {
     }
   };
 
+  // ADD THE NEW HELPER FUNCTIONS HERE:
+  const handleUserSelection = (index: number, user: User) => {
+    const displayName = `${user.firstName} ${user.lastName} (ID: ${user.id})`;
+
+    // Update both userId and userName at the same time
+    const updated = [...contributors];
+    updated[index] = {
+      ...updated[index],
+      userId: user.id,
+      userName: displayName
+    };
+    setContributors(updated);
+
+    // Clear search state
+    setSearchTerms(prev => ({ ...prev, [index]: "" }));
+    setActiveSearchIndex(null);
+
+    console.log("User selected - updated contributor:", updated[index]);
+  };
+
+  const handleSearchInputChange = (index: number, newValue: string) => {
+    // If there's a selected user and the input is being modified, clear the selection
+    const currentContributor = contributors[index];
+    if (currentContributor?.userId && newValue !== currentContributor.userName) {
+      updateContributor(index, "userId", "");
+    }
+
+    updateContributor(index, "userName", newValue);
+    setSearchTerms(prev => ({ ...prev, [index]: newValue }));
+    setActiveSearchIndex(index);
+  };
+
   const onSubmit = (data: WorkFormData) => {
+    console.log("Form submission - contributors:", contributors); // ADDED DEBUG
+
+    const token = getAuthToken();
+    console.log("Auth token:", token ? "EXISTS" : "MISSING");
+    console.log("Current user:", user);
+    console.log("User role:", user?.role); // ADD THIS LINE
+    console.log("Can access artist features:", user?.role ? canAccessArtistFeatures(user.role) : false); // ADD THIS LINE
+
     // Allow works to be submitted without contributors
     if (contributors.length > 0) {
       // If contributors are added, they must be valid users
@@ -141,6 +218,10 @@ export default function WorkRegistrationForm() {
         percentage: c.percentage,
       })),
     };
+
+    console.log("EXACT DATA BEING SENT:", JSON.stringify(formData, null, 2)); // ADD THIS
+
+    form.setValue("contributors", contributors);
     createWorkMutation.mutate(formData);
   };
 
@@ -295,6 +376,16 @@ export default function WorkRegistrationForm() {
               <p className="text-sm text-gray-600 mb-3">
                 Add contributors who are registered users in the system. Search by name to find and select them.
               </p>
+              {/* ADD THE DEBUG PANEL HERE: */}
+              <div className="text-xs text-gray-500 mb-2 p-2 bg-gray-100 rounded">
+                <div>Contributors: {contributors.length}</div>
+                {contributors.map((c, i) => (
+                  <div key={i}>
+                    Contributor {i}: userId="{c.userId}", userName="{c.userName}"
+                  </div>
+                ))}
+              </div>
+              {/* END OF DEBUG PANEL */}
               <div className="space-y-3 mt-2">
                 {contributors.map((contributor, index) => (
                   <div
@@ -302,16 +393,20 @@ export default function WorkRegistrationForm() {
                     className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg"
                     data-testid={`contributor-row-${index}`}
                   >
+                    {/*And replace the Input JSX with this simplified version: */}
                     <div className="flex-1 relative">
                       <Input
                         placeholder="Type to search for registered users..."
                         value={contributor.userName || ""}
                         onChange={(e) => {
                           const newValue = e.target.value;
-                          updateContributor(index, "userName", newValue);
-                          if (contributor.userId) {
-                            updateContributor(index, "userId", ""); // Clear user ID when typing
+
+                          // Clear userId if user is typing something different
+                          if (contributor.userId && newValue !== contributor.userName) {
+                            updateContributor(index, "userId", "");
                           }
+
+                          updateContributor(index, "userName", newValue);
                           setSearchTerms(prev => ({ ...prev, [index]: newValue }));
                           setActiveSearchIndex(index);
                         }}
@@ -331,10 +426,21 @@ export default function WorkRegistrationForm() {
                               type="button"
                               className="w-full text-left px-3 py-2 hover:bg-gray-50"
                               onClick={() => {
-                                updateContributor(index, "userId", user.id);
-                                updateContributor(index, "userName", `${user.firstName} ${user.lastName} (ID: ${user.id})`);
+                                const displayName = `${user.firstName} ${user.lastName} (ID: ${user.id})`;
+
+                                // Direct state update - bypass all the helper functions
+                                const updated = [...contributors];
+                                updated[index] = {
+                                  ...updated[index],
+                                  userId: user.id,
+                                  userName: displayName
+                                };
+                                setContributors(updated);
+
                                 setSearchTerms(prev => ({ ...prev, [index]: "" }));
                                 setActiveSearchIndex(null);
+
+                                console.log("Direct user selection - contributor:", updated[index]);
                               }}
                               data-testid={`button-select-user-${user.id}`}
                             >
@@ -405,9 +511,9 @@ export default function WorkRegistrationForm() {
 
             {/* Submit */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setLocation("/works")}
                 data-testid="button-cancel-work"
               >
